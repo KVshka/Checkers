@@ -82,11 +82,17 @@ class Game:
             def Create(self, i, j, canvas):
                     
                     def click(event): #клик на клетку с шашкой
-                        position = canvas.coords(button_window) #получаем координаты шашки
-                        print(position)
-                        able_white = [key for key, value in self.white_coords.items() if value == True]
-                        print("Доступные ходы")
-                        print(able_white)
+                        def check_ability():
+                            for i in range(8):
+                                for j in range(7):
+                                    if self.pos[j][i] == 1:
+                                        diag1 = np.diag(self.pos, int(j/100)-int(i/100))
+                                        diag2 = np.diag(np.fliplr(self.pos), 7-(int(j/100)+int(i/100)))
+                                        if (i*100, j*100) not in self.king_coords:
+                                            if self.pos[j-1][i-1] == 0 or self.pos[j-1][i-1] == 0:
+                                                self.white_coords[i*100, j*100] = True
+                                            
+
                         def check_step(able):
                             if able == able_white:
                                 print("Белые")
@@ -106,11 +112,17 @@ class Game:
                                 y = coord[1]
                                 diag1 = np.diag(self.pos, int(x/100)-int(y/100))
                                 diag2 = np.diag(np.fliplr(self.pos), 7-(int(x/100)+int(y/100)))
+                                print("Диагональ 1")
+                                print(diag1)
+                                print("Диагональ 2")
+                                print(diag2)
                                 if coord in self.king_coords:
-                                    step11 = diag1[:int(y)]
-                                    step12 = diag1[(-1)*int(y)+1:]
-                                    step21 = diag2[:int(y)]
-                                    step22 = diag2[(-1)*int(y)+1:]
+                                    step11 = diag1[:int(y/100)]
+                                    step12 = diag1[(-1)*int(y/100)+1:]
+                                    step21 = diag2[:int(y/100)]
+                                    step22 = diag2[(-1)*int(y/100)+1:]
+                                    print("Срезы диагоналей")
+                                    print(step11, step12, step21, step22)
                                     step11_len = len(step11)
                                     step12_len = len(step12)
                                     step21_len = len(step21)
@@ -124,10 +136,12 @@ class Game:
                                     elif step22_len >= 3:
                                         eliminate(step22_len, step22, coord)
                                 else:
-                                    step11 = diag1[int(y)-2:len(diag1)-int(y)]
-                                    step12 = diag1[int(x):len(diag1)-int(y)-2]
-                                    step21 = diag2[int(y)-2:len(diag2)-int(y)]
-                                    step22 = diag2[int(x):len(diag2)-int(y)-2]
+                                    step11 = diag1[int(y/100)-2:len(diag1)-int(y/100)]
+                                    step12 = diag1[int(x/100):len(diag1)-int(y/100)-2]
+                                    step21 = diag2[int(y/100)-2:len(diag2)-int(y/100)]
+                                    step22 = diag2[int(x/100):len(diag2)-int(y/100)-2]
+                                    print("Срезы диагоналей")
+                                    print(step11, step12, step21, step22)
                                     step11_len = len(step11)
                                     step12_len = len(step12)
                                     step21_len = len(step21)
@@ -162,7 +176,11 @@ class Game:
                             able_black = [key for key, value in self.black_coords.items() if value == True]
                             random_black = check_step(able_black)
                             print(random_black)
-                            
+                            if self.pos[int(random_black[1]/100)+1][int(random_black[0]/100)+1] == 0:
+                                self.tiles[[int(random_black[1]/100)+1, int(random_black[0]/100)+1]][0]["image"] = 'self.i3'
+                                self.pos[int(random_black[1]/100)+1][int(random_black[0]/100)+1] = 1
+                                self.tiles[[int(random_black[1]/100), int(random_black[0]/100)]][0]["image"] = ''
+                                self.pos[int(random_black[1]/100)][int(random_black[0]/100)] = 0
 
 
                         def user_step(): #ход игрока обычной шашкой
@@ -188,7 +206,17 @@ class Game:
                                 self.user_stepped = 0
                                 self.king_coords.remove(self.user_position)
                                 self.king_coords.append(position)
+                                diag1 = np.diag(self.pos, int(position[1]/100)-int(position[0]/100))
+                                diag2 = np.diag(np.fliplr(self.pos), 7-(int(position[1]/100)+int(position[0]/100)))
+                                if 0 in diag1 or 0 in diag2:
+                                    self.white_coords[position[0], position[1]] = True
                                 computer_step()
+
+                        position = canvas.coords(button_window) #получаем координаты шашки
+                        print(position)
+                        able_white = [key for key, value in self.white_coords.items() if value == True]
+                        print("Доступные ходы")
+                        print(able_white)
 
                         if self.user_stepped == 0: 
                             if self.pos[int(position[1]/100)][int(position[0]/100)] == 1:
@@ -196,9 +224,10 @@ class Game:
                         elif self.user_stepped == 1: 
                             if not self.user_position in self.king_coords:
                                 user_step()
-                                
+                                check_ability()
                             else:
                                 user_king_step()
+                                check_ability()
                             print(self.user_stepped)
                     if (i%2==0 and j%2==0) or (i%2!=0 and j%2!=0):
                         self.tile = Button(master=canvas, width=100, height=100, bg="#000000", anchor=NW)
@@ -208,28 +237,25 @@ class Game:
                             if j==6 and (i==5 or i == 3):
                                 self.tile["image"] = self.i2
                                 self.king_coords.append([i*100, j*100]) #сохраняем координаты данных
-                                self.white_coords[i*100, j*100] = True
                             else:
                                 self.tile["image"] = self.i1  
-                            if j > 0 and (i < 7 and self.pos[j-1][i+1] == 0 or i > 0 and self.pos[j-1][i-1] == 0): #Проверяем, может ли шашка совершить ход
-                                self.white_coords[i*100, j*100] = True #сохраняем координаты белых шашек
-                            else:
-                                self.white_coords[i*100, j*100] = False
+                                if j > 0 and (i < 7 and self.pos[j-1][i+1] == 0 or i > 0 and self.pos[j-1][i-1] == 0): #Проверяем, может ли шашка совершить ход
+                                    self.white_coords[i*100, j*100] = True #сохраняем координаты белых шашек
+                                else:
+                                    self.white_coords[i*100, j*100] = False
                         elif j < 3:
                             if j==0 and (i==5 or i == 3):
                                 self.tile["image"] = self.i4
                                 self.king_coords.append([i*100, j*100]) #сохраняем координаты данных
-                                self.black_coords[i*100, j*100] = True
                             else:
                                 self.tile["image"] = self.i3
-                            if j < 6 and (i < 7 and self.pos[j+1][i+1] == 0 or i > 0 and self.pos[j+1][i-1] == 0): #Проверяем, может ли шашка совершить ход
-                                self.black_coords[i*100, j*100] = True #сохраняем координаты чёрных шашек
-                            else:
-                                self.black_coords[i*100, j*100] = False
+                                if j < 6 and (i < 7 and self.pos[j+1][i+1] == 0 or i > 0 and self.pos[j+1][i-1] == 0): #Проверяем, может ли шашка совершить ход
+                                    self.black_coords[i*100, j*100] = True #сохраняем координаты чёрных шашек
+                                else:
+                                    self.black_coords[i*100, j*100] = False
                         self.tile.bind('<Button-1>', click)   
                         self.tiles[i*100, j*100]= [self.tile]
                     button_window = canvas.create_window(i*100, j*100, anchor=NW, window=self.tile)
-                    
       
     def __init__(self):
             self.pos = np.array([[0, -1, 0, -1, 0, -1, 0, -1], 
